@@ -1,0 +1,41 @@
+{
+  // TODO: do not allow default exports.
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "plugin:prettier/recommended", // integrates with eslint-config-prettier
+    "plugin:@typescript-eslint/recommended",
+    "eslint-config-leafly"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "sourceType": "module"
+  },
+  "rules": {
+    "prefer-arrow-callback": "off",
+    "func-names": "off",
+    "no-return-await": "error",
+    "camelcase": "off",
+    "@typescript-eslint/camelcase": "off",
+    "@typescript-eslint/explicit-function-return-type": ["off"],
+    "@typescript-eslint/explicit-module-boundary-types": ["off"],
+    "@typescript-eslint/prefer-interface": ["off"],
+    "@typescript-eslint/no-empty-function": "off"
+  },
+  "overrides": [
+    {
+      "files": ["generated*"],
+      "rules": {
+        "@typescript-eslint/no-namespace": "off",
+        "@typescript-eslint/ban-types": "off",
+        "@typescript-eslint/no-empty-interface": "off"
+      }
+    },
+    {
+      "files": ["*.js"],
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off"
+      }
+    }
+  ]
+}

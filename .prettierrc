@@ -1,0 +1,8 @@
+{
+  "proseWrap": "preserve",
+  "semi": true,
+  "singleQuote": false,
+  "useTabs": false,
+  "arrowParens": "always",
+  "trailingComma": "es5"
+}
