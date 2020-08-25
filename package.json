@@ -4,7 +4,7 @@
   "description": "Leafly Messenger bot August 2020 company hackathon",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "node server.js",
     "tunnel": "./ngrok http 8080"
   },
@@ -20,13 +20,18 @@
   },
   "homepage": "https://github.com/danielrobertson/leafly-bot#readme",
   "devDependencies": {
+    "jest": "^26.4.2",
     "tslint": "^5.12.1",
     "typescript": "^3.3.3"
   },
   "dependencies": {
+    "axios": "^0.20.0",
     "body-parser": "^1.19.0",
     "dotenv": "^8.2.0",
+    "email-validator": "^2.0.4",
     "express": "^4.17.1",
+    "pg": "^8.3.2",
+    "pino": "^6.5.1",
     "request": "^2.88.2"
   }
 }

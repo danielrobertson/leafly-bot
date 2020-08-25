@@ -7,7 +7,9 @@ Leafly Messenger bot August 2020 company hackathon
 ## Development
 
 ```
+Fill .env values
 npm install
+npm test
 npm start
 ```
 
@@ -25,4 +27,10 @@ Test your local tunnel is successful by testing the webhook
 curl -X GET "https://0efd63c08e1c.ngrok.io/webhook?hub.verify_token=<YOUR_VERIFY_TOKEN>&hub.challenge=CHALLENGE_ACCEPTibe"ub.mode=subscribe"
 ```
 
-And finally [update the Messenger app in Facebook settings](https://developers.facebook.com/apps/359612735032348/messenger/settings/) with the webhook
+And finally [update the Messenger app in Facebook settings](https://developers.facebook.com/apps/359612735032348/messenger/settings/) with the webhook path
+
+#### Thanks to
+
+Kelly
+Cara
+Dana
