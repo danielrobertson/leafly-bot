@@ -1,34 +1,46 @@
 const request = require("request");
 const { responseOperations, orderStatus } = require("./constants");
 const emailValidator = require("email-validator");
+const { search } = require("./clients/leafly");
+const {
+  addConversationState,
+  getLastConversationState,
+} = require("./data/conversation-state");
 const {
   fetchUserByPhone,
   fetchUserByEmail,
   fetchLatestReservationByUser,
   fetchRecentDeals,
-} = require("./database/db");
+} = require("./data/db");
 
 function firstNlpTrait(nlp, name) {
   return nlp && nlp.entities && nlp.traits[name] && nlp.traits[name][0];
 }
 
-const handleMessage = async (sender_psid, received_message) => {
-  console.log(received_message);
-  if (received_message.text) {
-    const greeting = firstNlpTrait(received_message.nlp, "wit$greetings");
-    if (greeting && greeting.confidence > 0.8) {
+const handleMessage = async (sender_psid, message) => {
+  console.log(message);
+  if (message.text) {
+    const isGreeting = firstNlpTrait(message.nlp, "wit$greetings");
+    const previousConversationState = getLastConversationState(sender_psid);
+
+    // check if message is part of a dialogue flow
+    if (previousConversationState === responseOperations.SHOP) {
+      const searchResults = await search(message.text);
+      sendSearchResultsResponse(
+        sender_psid,
+        searchResults.strain,
+        searchResults.product
+      ); // TODO get highest confidence search results regardless of category
+    } else if (isGreeting && isGreeting.confidence > 0.8) {
       sendGreeting(sender_psid);
-    } else if (received_message.text === "420") {
+    } else if (message.text === "420") {
       callSendAPI(sender_psid, {
         text: "Nice 👌🏼",
       });
     } else {
       // check for quick reply tap responses
-      if (
-        received_message.quick_reply &&
-        received_message.quick_reply.payload
-      ) {
-        const payload = received_message.quick_reply.payload;
+      if (message.quick_reply && message.quick_reply.payload) {
+        const payload = message.quick_reply.payload;
         if (emailValidator.validate(payload)) {
           // email quick reply
           const user = await fetchUserByEmail(email);
@@ -39,10 +51,8 @@ const handleMessage = async (sender_psid, received_message) => {
           callSendAPI(sender_psid, {
             text: "Looking up your account...",
           });
-          console.log("order updates by phone ", received_message.text);
-          const user = await fetchUserByPhone(
-            received_message.text.replace("+1", "")
-          );
+          console.log("order updates by phone ", message.text);
+          const user = await fetchUserByPhone(message.text.replace("+1", ""));
           const reservation = await fetchLatestReservationByUser(user.id);
           sendOrderStatus(sender_psid, reservation);
         } else {
@@ -54,6 +64,12 @@ const handleMessage = async (sender_psid, received_message) => {
               break;
             case responseOperations.SHOP:
               console.log("shop");
+              callSendAPI(sender_psid, {
+                text:
+                  "What are you looking for? I can find products and strain info",
+              });
+              addConversationState(sender_psid, responseOperations.SHOP);
+
               break;
             case responseOperations.DEALS:
               sendDealsResponse(sender_psid);
@@ -64,13 +80,13 @@ const handleMessage = async (sender_psid, received_message) => {
             default:
               console.error(
                 "Unknown response payload ",
-                received_message.quick_reply.payload
+                message.quick_reply.payload
               );
           }
         }
       }
 
-      console.log("Catch all-- ", received_message.text);
+      console.log("Catch all-- ", message.text);
     }
   }
 };
@@ -102,6 +118,67 @@ const callSendAPI = (sender_psid, response) => {
   );
 };
 
+async function sendSearchResultsResponse(sender_psid, strains, products) {
+  console.log("sendSearchResultsResponse");
+  // TODO find the most pertinent search results to show
+  const productCards = products.slice(0, 3).map((product) => {
+    return {
+      title: product.product.name,
+      image_url: product.product.imageUrl,
+      subtitle: product.product.shortDescription || product.product.description,
+      buttons: [
+        {
+          type: "web_url",
+          title: "Shop",
+          url: `https://www.leafly.com/products/details/${product.product.slug}`,
+        },
+      ],
+    };
+  });
+
+  const strainCards = strains.slice(0, 3).map((strain) => {
+    return {
+      title: strain.name,
+      image_url:
+        strain.nugImage ||
+        "https://s3-us-west-2.amazonaws.com/leafly-images/deals/preset/other1.png",
+      subtitle: strain.subtitle || strain.shortDescriptionPlain,
+      buttons: [
+        {
+          type: "web_url",
+          title: "Shop",
+          url: `https://www.leafly.com/strains/${strain.slug}`,
+        },
+      ],
+    };
+  });
+
+  // show an assortment of strains and products
+  let itemsToShow = [];
+  for (let i = 0; i < 4; i++) {
+    if (i % 2) {
+      if (productCards.length === 0) {
+        continue;
+      }
+      itemsToShow.push(productCards.shift());
+    } else {
+      if (strainCards.length === 0) {
+        continue;
+      }
+      itemsToShow.push(strainCards.shift());
+    }
+  }
+
+  callSendAPI(sender_psid, {
+    attachment: {
+      type: "template",
+      payload: {
+        template_type: "generic",
+        elements: itemsToShow,
+      },
+    },
+  });
+}
 async function sendDealsResponse(sender_psid) {
   console.log("sendDealsResponse");
 

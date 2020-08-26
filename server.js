@@ -7,11 +7,11 @@ const app = express().use(bodyParser.json());
 const { handleMessage, handlePostback } = require("./src/bot");
 
 // init db connection
-require("./src/database/db-initialize");
+require("./src/data/db-initialize");
 
+// init http webhook endpoints for communication with Messenger platform
 app.listen(process.env.PORT || 1337, () => console.log("webhook is listening"));
 
-// Webook for communicating with Messenger platform
 app.post("/webhook", (req, res) => {
   let body = req.body;
 

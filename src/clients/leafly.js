@@ -16,6 +16,7 @@ const search = async (searchQuery) => {
       },
     });
     console.log(response);
+    return response.data.hits;
   } catch (error) {
     console.error(error);
   }
