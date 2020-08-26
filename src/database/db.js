@@ -39,12 +39,27 @@ const fetchUserByEmail = async (email) => {
   }
 };
 
-// fetchUserByPhone("5127334907");
+const fetchRecentDeals = async () => {
+  // todo use user location
+  try {
+    const res = await leaflyDb.query(
+      "select distinct(content), image_url, title, content, end_date, d.slug, d.name " +
+        "from dispensary_deal join dispensary d on dispensary_deal.dispensary_id = d.id " +
+        "where image_url != '' and end_date > current_date order by end_date asc limit 5"
+    );
+    console.log(res.rows);
+    return res.rows;
+  } catch (err) {
+    console.log(err.stack);
+  }
+};
 
+// fetchUserByPhone("5127334907");
 // fetchLatestReservationById(3359);
 
 module.exports = {
   fetchLatestReservationByUser,
   fetchUserByPhone,
   fetchUserByEmail,
+  fetchRecentDeals,
 };

@@ -1,0 +1,27 @@
+{greeting input, from NLP} hi, hello 
+Welcomed to Leafly 
+What can we do to help you today? 
+(options) learn, shop, browse deals, order updates
+
+Order updates 
+We'll be happy to help you. Select from the following? 
+(options)
+1. Search by order number 
+   Sure, please write the order number 
+   1234
+   <template with delivery image and "Order status, ETA">
+2. Link my account
+  <account linking dialog> 
+  Searching for your last order... 
+  <template with delivery image and "Order status, ETA">
+
+{fall back messsage} 
+Sorry, but I don't recognize "input text"
+Any any time, use the menu below to navigate through the feature. 
+What can we do to help you today? 
+(options) learn, shop, browse deals, order updates 
+
+Help 
+- If there is something we can improve feel free to comment with #suggestion 
+- "here's improvemenet for ya #suggestion" 
+- Your suggestion has been recorded for the future review by the team
