@@ -13,6 +13,7 @@ const responseOperations = {
   SHOP: "shop",
   DEALS: "deals",
   ORDER_STATUS: "order_status",
+  START_CONVERSATION: "start",
 };
 
 module.exports = {

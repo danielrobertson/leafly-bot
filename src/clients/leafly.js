@@ -1,6 +1,5 @@
 require("dotenv").config();
 const axios = require("axios");
-const request = require("request");
 
 const search = async (searchQuery) => {
   try {

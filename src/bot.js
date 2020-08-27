@@ -1,6 +1,6 @@
-const request = require("request");
-const { responseOperations, orderStatus } = require("./constants");
 const emailValidator = require("email-validator");
+const { responseOperations, orderStatus } = require("./constants");
+const { callSendAPI, callProfileAPI } = require("./clients/messenger");
 const { search } = require("./clients/leafly");
 const {
   addConversationState,
@@ -17,22 +17,27 @@ function firstNlpTrait(nlp, name) {
   return nlp && nlp.entities && nlp.traits[name] && nlp.traits[name][0];
 }
 
-const handleMessage = async (sender_psid, message) => {
+async function handleMessage(sender_psid, message) {
   console.log(message);
   if (message.text) {
     const isGreeting = firstNlpTrait(message.nlp, "wit$greetings");
     const previousConversationState = getLastConversationState(sender_psid);
 
-    // check if message is part of a dialogue flow
+    // check if message is part of a multi-step dialogue flow
     if (previousConversationState === responseOperations.SHOP) {
       const searchResults = await search(message.text);
       sendSearchResultsResponse(
         sender_psid,
         searchResults.strain,
         searchResults.product
-      ); // TODO get highest confidence search results regardless of category
+      );
     } else if (isGreeting && isGreeting.confidence > 0.8) {
       sendGreeting(sender_psid);
+    } else if (
+      message.text.toLowerCase() === "menu" ||
+      message.text.toLowerCase() === "help"
+    ) {
+      sendMenu(sender_psid);
     } else if (message.text === "420") {
       callSendAPI(sender_psid, {
         text: "Nice 👌🏼",
@@ -63,13 +68,7 @@ const handleMessage = async (sender_psid, message) => {
               sendLearnResponse(sender_psid);
               break;
             case responseOperations.SHOP:
-              console.log("shop");
-              callSendAPI(sender_psid, {
-                text:
-                  "What are you looking for? I can find products and strain info",
-              });
-              addConversationState(sender_psid, responseOperations.SHOP);
-
+              sendSearchPrompt(sender_psid);
               break;
             case responseOperations.DEALS:
               sendDealsResponse(sender_psid);
@@ -89,38 +88,77 @@ const handleMessage = async (sender_psid, message) => {
       console.log("Catch all-- ", message.text);
     }
   }
-};
+}
 
-const callSendAPI = (sender_psid, response) => {
-  // Construct the message body
-  let request_body = {
-    recipient: {
-      id: sender_psid,
-    },
-    message: response,
-  };
+function handlePostback(sender_psid, received_postback) {
+  console.log("handlePostback ", received_postback);
+  let payload = received_postback.payload;
 
-  // Send the HTTP request to the Messenger Platform
-  request(
-    {
-      uri: "https://graph.facebook.com/v2.6/me/messages",
-      qs: { access_token: process.env.PAGE_ACCESS_TOKEN },
-      method: "POST",
-      json: request_body,
+  // Delegate actions
+  // These postbacks come from Get Started or the persistent menu
+  if (payload === responseOperations.START_CONVERSATION) {
+    sendGreeting(sender_psid);
+  } else if (payload === responseOperations.LEARN) {
+    sendLearnResponse(sender_psid);
+  } else if (payload === responseOperations.SHOP) {
+    sendSearchPrompt(sender_psid);
+  } else if (payload === responseOperations.DEALS) {
+    sendDealsResponse(sender_psid);
+  } else if (payload === responseOperations.ORDER_STATUS) {
+    sendAccountLookupPrompt(sender_psid);
+  }
+}
+
+/**
+ * Note this only be set once
+ */
+// initializeConversationSettings()
+function initializeConversationSettings() {
+  //set welcome message and the persistent menu
+  callProfileAPI({
+    get_started: {
+      payload: responseOperations.START_CONVERSATION,
     },
-    (err, res, body) => {
-      if (!err) {
-        console.log("message sent!");
-      } else {
-        console.error("Unable to send message:" + err);
-      }
-    }
-  );
-};
+  });
+
+  // Known Facebook bug: limit 3 https://developers.facebook.com/support/bugs/843911579346069/
+  callProfileAPI({
+    persistent_menu: [
+      {
+        locale: "default",
+        composer_input_disabled: false,
+        call_to_actions: [
+          {
+            type: "postback",
+            title: "🛍 Shop",
+            payload: responseOperations.SHOP,
+          },
+          {
+            type: "postback",
+            title: "💰 Browse deals",
+            payload: responseOperations.DEALS,
+          },
+          {
+            type: "postback",
+            title: "📦 Order updates",
+            payload: responseOperations.ORDER_STATUS,
+          },
+        ],
+      },
+    ],
+  });
+}
+
+function sendSearchPrompt(sender_psid) {
+  callSendAPI(sender_psid, {
+    text: "What are you looking for? I can find products and strain info",
+  });
+  addConversationState(sender_psid, responseOperations.SHOP);
+}
 
 async function sendSearchResultsResponse(sender_psid, strains, products) {
   console.log("sendSearchResultsResponse");
-  // TODO find the most pertinent search results to show
+  // TODO find the most pertinent, highest confidence search results to show
   const productCards = products.slice(0, 3).map((product) => {
     return {
       title: product.product.name,
@@ -306,15 +344,13 @@ function sendOrderStatus(sender_psid, reservation) {
 async function sendGreeting(sender_psid) {
   callSendAPI(sender_psid, { text: "Welcome to Leafly 👋🏼" });
   await pause();
+  sendMenu(sender_psid);
+}
+
+function sendMenu(sender_psid) {
   callSendAPI(sender_psid, {
     text: "How can we help today?",
     quick_replies: [
-      {
-        content_type: "text",
-        title: "📚 Learn",
-        payload: JSON.stringify({ operation: responseOperations.LEARN }),
-        image_url: "",
-      },
       {
         content_type: "text",
         title: "🛍 Shop",
@@ -327,27 +363,17 @@ async function sendGreeting(sender_psid) {
       },
       {
         content_type: "text",
+        title: "📚 Learn",
+        payload: JSON.stringify({ operation: responseOperations.LEARN }),
+        image_url: "",
+      },
+      {
+        content_type: "text",
         title: "📦 Order updates",
         payload: JSON.stringify({ operation: responseOperations.ORDER_STATUS }),
       },
     ],
   });
-}
-
-function handlePostback(sender_psid, received_postback) {
-  let response;
-
-  // Get the payload for the postback
-  let payload = received_postback.payload;
-
-  // Set the response based on the postback payload
-  if (payload === "yes") {
-    response = { text: "Thanks!" };
-  } else if (payload === "no") {
-    response = { text: "Oops, try sending another image." };
-  }
-  // Send the message to acknowledge the postback
-  callSendAPI(sender_psid, response);
 }
 
 async function pause() {
