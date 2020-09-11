@@ -1,8 +1,13 @@
 # leafly-bot
 
-Leafly Messenger bot August 2020 company hackathon
+Leafly Messenger bot where users can search for products, browse deals, and check order status updates. 
+Built during Leafly Fall 2020 company-wide hackathon
 
 [Here is the bot's Page](https://www.facebook.com/Leaflyhackathonbot-105918007903744)
+
+## Demo 
+<img src="/demos/start.gif" width="250"/> <img src="/demos/search.gif" width="250"/>     
+<img src="/demos/deals.gif" width="250"/> <img src="/demos/order.gif" width="250"/>
 
 ## Development
 
