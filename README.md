@@ -5,10 +5,8 @@ Leafly Messenger bot August 2020 company hackathon
 [Here is the bot's Page](https://www.facebook.com/Leaflyhackathonbot-105918007903744)
 
 ## Demo 
-![demo](./demos/start.gif | width=100)
-![demo](./demos/search.gif | width=100)
-![demo](./demos/deals.gif | width=100)
-![demo](./demos/order.gif | width=100)
+<img src="/demos/start.gif" width="250"/> <img src="/demos/search.gif" width="250"/>     
+<img src="/demos/deals.gif" width="250"/> <img src="/demos/order.gif" width="250"/>
 
 ## Development
 
